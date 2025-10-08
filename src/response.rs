@@ -1,6 +1,8 @@
 //! Kraken API responses
 
-use serde::Deserialize;
+use std::collections::HashMap;
+
+use serde::{Deserialize, Deserializer, de};
 
 use crate::error::Error;
 
@@ -20,5 +22,34 @@ impl<T> KrakenResult<T> {
         }
 
         self.result.ok_or(Error::MissingResult)
+    }
+}
+
+pub(crate) struct Balances(HashMap<String, f64>);
+
+impl Balances {
+    #[inline]
+    pub(crate) fn into_inner(self) -> HashMap<String, f64> {
+        self.0
+    }
+}
+
+impl<'de> Deserialize<'de> for Balances {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // Kraken returns the balances as string
+        let map: HashMap<String, String> = Deserialize::deserialize(deserializer)?;
+
+        // Convert to f64
+        let mut balances: HashMap<String, f64> = HashMap::with_capacity(map.len());
+
+        for (coin, amount) in map.into_iter() {
+            let amount: f64 = amount.parse().map_err(de::Error::custom)?;
+            balances.insert(coin, amount);
+        }
+
+        Ok(Self(balances))
     }
 }

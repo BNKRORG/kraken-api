@@ -13,7 +13,7 @@ use crate::auth::{self, KrakenAuth};
 use crate::constant::{API_ROOT_URL, API_VERSION, USER_AGENT_NAME};
 use crate::error::Error;
 use crate::request::Empty;
-use crate::response::KrakenResult;
+use crate::response::{Balances, KrakenResult};
 
 enum Api {
     Balance,
@@ -114,8 +114,8 @@ impl KrakenClient {
     }
 
     /// Get account balances
-    #[inline]
     pub async fn balances(&self) -> Result<HashMap<String, f64>, Error> {
-        self.query_private(Api::Balance).await
+        let balances: Balances = self.query_private(Api::Balance).await?;
+        Ok(balances.into_inner())
     }
 }
