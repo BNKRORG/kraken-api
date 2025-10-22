@@ -118,4 +118,20 @@ impl KrakenClient {
         let balances: Balances = self.query_private(Api::Balance).await?;
         Ok(balances.into_inner())
     }
+
+    /// Get BTC balance
+    pub async fn btc_balance(&self) -> Result<f64, Error> {
+        // Get all balances
+        let balances: HashMap<String, f64> = self.balances().await?;
+
+        // Kraken uses XBT for BTC
+        let xbt: f64 = balances.get("XBT").copied().unwrap_or_default();
+        let xxbt: f64 = balances.get("XXBT").copied().unwrap_or_default();
+        let xbt_b: f64 = balances.get("XBT.B").copied().unwrap_or_default();
+        let xbt_m: f64 = balances.get("XBT.M").copied().unwrap_or_default();
+        let xbt_f: f64 = balances.get("XBT.F").copied().unwrap_or_default();
+        let xbt_t: f64 = balances.get("XBT.T").copied().unwrap_or_default();
+
+        Ok(xbt + xxbt + xbt_b + xbt_m + xbt_f + xbt_t)
+    }
 }
