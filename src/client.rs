@@ -1,6 +1,5 @@
 //! Kraken client
 
-use std::collections::HashMap;
 use std::time::Duration;
 
 use reqwest::header::{HeaderMap, HeaderValue};
@@ -13,7 +12,7 @@ use crate::auth::{self, KrakenAuth};
 use crate::constant::{API_ROOT_URL, API_VERSION, USER_AGENT_NAME};
 use crate::error::Error;
 use crate::request::Empty;
-use crate::response::{Balances, KrakenResult};
+use crate::response::{BitcoinBalances, KrakenResult};
 
 enum Api {
     Balance,
@@ -113,25 +112,12 @@ impl KrakenClient {
         }
     }
 
-    /// Get account balances
-    pub async fn balances(&self) -> Result<HashMap<String, f64>, Error> {
-        let balances: Balances = self.query_private(Api::Balance).await?;
-        Ok(balances.into_inner())
-    }
+    /// Get **bitcoin** balance.
+    pub async fn balance(&self) -> Result<f64, Error> {
+        // Get bitcoin balances
+        let balances: BitcoinBalances = self.query_private(Api::Balance).await?;
 
-    /// Get BTC balance
-    pub async fn btc_balance(&self) -> Result<f64, Error> {
-        // Get all balances
-        let balances: HashMap<String, f64> = self.balances().await?;
-
-        // Kraken uses XBT for BTC
-        let xbt: f64 = balances.get("XBT").copied().unwrap_or_default();
-        let xxbt: f64 = balances.get("XXBT").copied().unwrap_or_default();
-        let xbt_b: f64 = balances.get("XBT.B").copied().unwrap_or_default();
-        let xbt_m: f64 = balances.get("XBT.M").copied().unwrap_or_default();
-        let xbt_f: f64 = balances.get("XBT.F").copied().unwrap_or_default();
-        let xbt_t: f64 = balances.get("XBT.T").copied().unwrap_or_default();
-
-        Ok(xbt + xxbt + xbt_b + xbt_m + xbt_f + xbt_t)
+        // Sum balances
+        Ok(balances.sum())
     }
 }

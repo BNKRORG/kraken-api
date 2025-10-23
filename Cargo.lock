@@ -548,6 +548,7 @@ dependencies = [
  "hmac",
  "reqwest",
  "serde",
+ "serde_json",
  "serde_qs",
  "sha2",
  "thiserror",
