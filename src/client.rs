@@ -10,12 +10,16 @@ use url::Url;
 use crate::auth::{self, KrakenAuth};
 use crate::constant::{API_ROOT_URL, API_VERSION, USER_AGENT_NAME, XBT_TICKER};
 use crate::error::Error;
-use crate::request::{DepositStatus, Empty, KrakenRequestBody, Request};
-use crate::response::{BitcoinBalances, DepositTransaction, KrakenResult};
+use crate::request::{DepositStatus, Empty, KrakenRequestBody, Request, WithdrawStatus};
+use crate::response::{BitcoinBalances, DepositTransaction, KrakenResult, WithdrawTransaction};
 
 enum Api<'a> {
     Balance,
     DepositStatus {
+        /// Currency to get transactions for.
+        asset: Option<&'a str>,
+    },
+    WithdrawStatus {
         /// Currency to get transactions for.
         asset: Option<&'a str>,
     },
@@ -26,6 +30,7 @@ impl Api<'_> {
         match self {
             Self::Balance => "Balance",
             Self::DepositStatus { .. } => "DepositStatus",
+            Self::WithdrawStatus { .. } => "WithdrawStatus",
         }
     }
 
@@ -33,6 +38,9 @@ impl Api<'_> {
         match self {
             Self::Balance => Request::Empty(Empty {}),
             Self::DepositStatus { asset } => Request::DepositStatus(DepositStatus {
+                asset: asset.as_deref(),
+            }),
+            Self::WithdrawStatus { asset } => Request::WithdrawStatus(WithdrawStatus {
                 asset: asset.as_deref(),
             }),
         }
@@ -128,11 +136,17 @@ impl KrakenClient {
         Ok(balances.sum())
     }
 
-    /// Get **bitcoin** transactions.
+    /// Get **bitcoin** deposit transactions.
     pub async fn deposit_transactions(&self) -> Result<Vec<DepositTransaction>, Error> {
         self.query_private(Api::DepositStatus {
             asset: Some(XBT_TICKER),
         })
         .await
+    }
+
+    /// Get **bitcoin** withdraw transactions.
+    pub async fn withdraw_transactions(&self) -> Result<Vec<WithdrawTransaction>, Error> {
+        self.query_private(Api::WithdrawStatus { asset: None })
+            .await
     }
 }

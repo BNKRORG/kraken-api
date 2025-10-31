@@ -12,4 +12,10 @@ async fn main() {
     for tx in transactions {
         println!("{:#?}", tx);
     }
+
+    let transactions = client.withdraw_transactions().await.unwrap();
+
+    for tx in transactions {
+        println!("{:#?}", tx);
+    }
 }

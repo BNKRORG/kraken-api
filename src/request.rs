@@ -16,10 +16,17 @@ pub(crate) struct KrakenRequestBody<'a> {
 pub(crate) enum Request<'a> {
     Empty(Empty),
     DepositStatus(DepositStatus<'a>),
+    WithdrawStatus(WithdrawStatus<'a>),
 }
 
 #[derive(Debug, Serialize)]
 pub(crate) struct DepositStatus<'a> {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) asset: Option<&'a str>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct WithdrawStatus<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) asset: Option<&'a str>,
 }

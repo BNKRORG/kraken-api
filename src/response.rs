@@ -118,6 +118,37 @@ pub struct DepositTransaction {
     pub status: TransactionStatus,
 }
 
+/// Withdraw transaction
+#[derive(Debug, Deserialize)]
+pub struct WithdrawTransaction {
+    /// Reference ID
+    #[serde(rename = "refid")]
+    pub id: String,
+    /// Asset
+    pub asset: String,
+    /// Asset class
+    #[serde(rename = "aclass")]
+    pub class: String,
+    /// Name of withdrawal method
+    pub method: String,
+    /// Network name based on the funding method used
+    pub network: String,
+    /// Method transaction ID
+    pub txid: String,
+    /// Method transaction information
+    pub info: String,
+    /// Amount deposited
+    #[serde(deserialize_with = "deserialize_string_to_f64")]
+    pub amount: f64,
+    /// Fees paid
+    #[serde(deserialize_with = "deserialize_string_to_f64")]
+    pub fee: f64,
+    /// Unix timestamp when request was made
+    pub time: u64,
+    /// Status of withdraw
+    pub status: TransactionStatus,
+}
+
 fn deserialize_string_to_f64<'de, D>(deserializer: D) -> Result<f64, D::Error>
 where
     D: Deserializer<'de>,
