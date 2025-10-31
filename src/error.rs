@@ -15,9 +15,9 @@ pub enum Error {
     /// Invalid header error
     #[error(transparent)]
     InvalidHeaderValue(#[from] InvalidHeaderValue),
-    /// Serde query string error
+    /// Json error
     #[error(transparent)]
-    SerdeQs(#[from] serde_qs::Error),
+    Json(#[from] serde_json::Error),
     /// Url error
     #[error(transparent)]
     Url(#[from] url::ParseError),

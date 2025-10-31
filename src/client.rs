@@ -10,7 +10,7 @@ use url::Url;
 use crate::auth::{self, KrakenAuth};
 use crate::constant::{API_ROOT_URL, API_VERSION, USER_AGENT_NAME, XBT_TICKER};
 use crate::error::Error;
-use crate::request::{DepositStatus, Empty};
+use crate::request::{DepositStatus, Empty, KrakenRequestBody, Request};
 use crate::response::{BitcoinBalances, DepositTransaction, KrakenResult};
 
 enum Api<'a> {
@@ -29,12 +29,12 @@ impl Api<'_> {
         }
     }
 
-    fn query_data(&self) -> Result<String, Error> {
+    fn body(&self) -> Request {
         match self {
-            Self::Balance => Ok(serde_qs::to_string(&Empty {})?),
-            Self::DepositStatus { asset } => Ok(serde_qs::to_string(&DepositStatus {
+            Self::Balance => Request::Empty(Empty {}),
+            Self::DepositStatus { asset } => Request::DepositStatus(DepositStatus {
                 asset: asset.as_deref(),
-            })?),
+            }),
         }
     }
 }
@@ -63,7 +63,7 @@ impl KrakenClient {
         })
     }
 
-    async fn query<T>(&self, url: Url, headers: HeaderMap, post_data: String) -> Result<T, Error>
+    async fn query<T>(&self, url: Url, headers: HeaderMap, body_json: String) -> Result<T, Error>
     where
         T: DeserializeOwned,
     {
@@ -72,7 +72,7 @@ impl KrakenClient {
             .client
             .post(url)
             .headers(headers)
-            .body(post_data)
+            .body(body_json)
             .send()
             .await?;
 
@@ -95,24 +95,25 @@ impl KrakenClient {
                 let method: &str = api.method();
 
                 let path: String = format!("/{API_VERSION}/private/{method}");
-                let mut url: Url = self.root_url.join(&path)?;
+                let url: Url = self.root_url.join(&path)?;
 
-                // Get query data as URL query string
-                let query_data: String = api.query_data()?;
-
-                // Set query string to URL
-                url.set_query(Some(&query_data));
+                // Construct body data
+                let body: KrakenRequestBody = KrakenRequestBody {
+                    nonce: auth::nonce(),
+                    request: api.body(),
+                };
 
                 // Sign the request
-                let (post_data, sig) = auth::sign_api(creds, &url)?;
+                let (body_json, sig) = auth::sign_api(creds, &url, body)?;
 
                 // Build headers
                 let mut headers: HeaderMap = HeaderMap::with_capacity(2);
                 headers.insert("API-Key", HeaderValue::from_str(&creds.key)?);
                 headers.insert("API-Sign", HeaderValue::from_str(&sig)?);
+                headers.insert("Content-Type", HeaderValue::from_static("application/json"));
 
                 // Query
-                self.query(url, headers, post_data).await
+                self.query(url, headers, body_json).await
             }
             KrakenAuth::None => Err(Error::MissingCredentials),
         }

@@ -1,5 +1,6 @@
 //! Kraken authentication
 
+use std::borrow::Cow;
 use std::fmt;
 use std::time::SystemTime;
 
@@ -10,6 +11,7 @@ use sha2::{Digest, Sha256, Sha512};
 use url::Url;
 
 use crate::error::Error;
+use crate::request::KrakenRequestBody;
 
 type HmacSha512 = Hmac<Sha512>;
 
@@ -64,26 +66,25 @@ impl KrakenAuth {
 pub(crate) fn sign_api(
     credentials: &KrakenApiCredentials,
     url: &Url,
+    body: KrakenRequestBody<'_>,
 ) -> Result<(String, String), Error> {
-    // Generate a nonce to become part of the postdata
-    let nonce: u64 = nonce();
-
     // Get the path and query data
     let url_path: &str = url.path();
-    let query_data: Option<&str> = url.query();
+    let query_str: Option<&str> = url.query();
 
-    // Append nonce to query string
-    let post_data: String = match query_data {
-        Some(query) => {
-            format!("nonce={nonce}&{query}")
-        }
-        None => format!("nonce={}", nonce),
+    // Serialize body to JSON
+    let body_json: String = serde_json::to_string(&body)?;
+
+    // Concatenate query and body strings
+    let data: Cow<str> = match query_str {
+        Some(query) => Cow::Owned(format!("{query}{body_json}")),
+        None => Cow::Borrowed(&body_json),
     };
 
     let sha2_result = {
         let mut hasher = Sha256::default();
-        hasher.update(nonce.to_string());
-        hasher.update(&post_data);
+        hasher.update(body.nonce.to_string());
+        hasher.update(data.as_ref());
         hasher.finalize()
     };
 
@@ -97,10 +98,10 @@ pub(crate) fn sign_api(
 
     let sig: String = STANDARD.encode(mac);
 
-    Ok((post_data, sig))
+    Ok((body_json, sig))
 }
 
-fn nonce() -> u64 {
+pub(super) fn nonce() -> u64 {
     SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap_or_default()
