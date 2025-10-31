@@ -67,6 +67,65 @@ impl<'de> Deserialize<'de> for BitcoinBalances {
     }
 }
 
+/// Transaction status
+///
+/// <https://github.com/globalcitizen/ifex-protocol/blob/master/draft-ifex-00.txt#L837>
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+pub enum TransactionStatus {
+    /// Initial
+    #[serde(alias = "initial", alias = "INITIAL")]
+    Initial,
+    /// Pending
+    #[serde(alias = "pending", alias = "PENDING")]
+    Pending,
+    /// Settled
+    #[serde(alias = "settled", alias = "SETTLED")]
+    Settled,
+    /// Success
+    #[serde(alias = "success", alias = "SUCCESS")]
+    Success,
+    /// Failure
+    #[serde(alias = "failure", alias = "FAILURE")]
+    Failure,
+}
+
+/// Deposit transaction
+#[derive(Debug, Deserialize)]
+pub struct DepositTransaction {
+    /// Reference ID
+    #[serde(rename = "refid")]
+    pub id: String,
+    /// Asset
+    pub asset: String,
+    /// Asset class
+    #[serde(rename = "aclass")]
+    pub class: String,
+    /// Name of deposit method
+    pub method: String,
+    /// Method transaction ID
+    pub txid: String,
+    /// Method transaction information
+    pub info: String,
+    /// Amount deposited
+    #[serde(deserialize_with = "deserialize_string_to_f64")]
+    pub amount: f64,
+    /// Fees paid
+    #[serde(deserialize_with = "deserialize_string_to_f64")]
+    pub fee: f64,
+    /// Unix timestamp when request was made
+    pub time: u64,
+    /// Status of deposit
+    pub status: TransactionStatus,
+}
+
+fn deserialize_string_to_f64<'de, D>(deserializer: D) -> Result<f64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: String = String::deserialize(deserializer)?;
+    s.parse().map_err(de::Error::custom)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -113,5 +172,18 @@ mod tests {
         let balances: BitcoinBalances = serde_json::from_str(json).expect("Failed to deserialize");
         assert_eq!(balances.0.len(), 0);
         assert_eq!(balances.sum(), 0.0);
+    }
+
+    #[test]
+    fn test_deposit_transaction_deserialization() {
+        let json = r#"{"aclass": "currency", "amount": "0.0000500000", "asset": "XXBT", "fee": "0.0000000000", "info": "lnbc50u1p5w0uh4pp5zm5h54cfsfan258hx5yxejm6hj28nakdwmjwycnfdlq00fgcq3wqdqhfdexz6m9dcsygetsdaekjaqcqzysxqrrsssp5t6zvny0j826dgxahpuyzzhk9m9n2m75zj9wnxy396rlxcuxd462s9qxpqysgquuygd682k3t6dq7wmw7amt00fghaqqpny22l8ssakcjts53jwe882hskaq4zeydpwfks0u47l5zzxk0hyg049wrgwv5fw067kzptd5gqmg30y6", "method": "Bitcoin Lightning", "refid": "FTKo1pI-55ynnZ4GFwca8XsAIjxqpl", "status": "Success", "time": 1760031475, "txid": "16e97a5709827b3550f735086ccb7abc9479f6cd76e4e262696fc0f7a518045c"}"#;
+
+        let tx: DepositTransaction = serde_json::from_str(json).expect("Failed to deserialize");
+        assert_eq!(tx.class, "currency");
+        assert_eq!(tx.amount, 0.00005);
+        assert_eq!(tx.fee, 0.0);
+        assert_eq!(tx.method, "Bitcoin Lightning");
+        assert_eq!(tx.status, TransactionStatus::Success);
+        assert_eq!(tx.time, 1760031475);
     }
 }

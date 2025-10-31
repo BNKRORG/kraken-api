@@ -4,30 +4,37 @@ use std::time::Duration;
 
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::{Client, Response};
-use serde::Serialize;
 use serde::de::DeserializeOwned;
 use url::Url;
 
 use crate::auth::{self, KrakenAuth};
-use crate::constant::{API_ROOT_URL, API_VERSION, USER_AGENT_NAME};
+use crate::constant::{API_ROOT_URL, API_VERSION, USER_AGENT_NAME, XBT_TICKER};
 use crate::error::Error;
-use crate::request::Empty;
-use crate::response::{BitcoinBalances, KrakenResult};
+use crate::request::{DepositStatus, Empty};
+use crate::response::{BitcoinBalances, DepositTransaction, KrakenResult};
 
-enum Api {
+enum Api<'a> {
     Balance,
+    DepositStatus {
+        /// Currency to get transactions for.
+        asset: Option<&'a str>,
+    },
 }
 
-impl Api {
+impl Api<'_> {
     fn method(&self) -> &str {
         match self {
-            Api::Balance => "Balance",
+            Self::Balance => "Balance",
+            Self::DepositStatus { .. } => "DepositStatus",
         }
     }
 
-    fn query_data(&self) -> impl Serialize {
+    fn query_data(&self) -> Result<String, Error> {
         match self {
-            Api::Balance => Empty {},
+            Self::Balance => Ok(serde_qs::to_string(&Empty {})?),
+            Self::DepositStatus { asset } => Ok(serde_qs::to_string(&DepositStatus {
+                asset: asset.as_deref(),
+            })?),
         }
     }
 }
@@ -79,20 +86,19 @@ impl KrakenClient {
         result.extract()
     }
 
-    async fn query_private<T>(&self, api: Api) -> Result<T, Error>
+    async fn query_private<T>(&self, api: Api<'_>) -> Result<T, Error>
     where
         T: DeserializeOwned,
     {
         match &self.auth {
             KrakenAuth::ApiKeys(creds) => {
                 let method: &str = api.method();
-                let query_data = api.query_data();
 
                 let path: String = format!("/{API_VERSION}/private/{method}");
                 let mut url: Url = self.root_url.join(&path)?;
 
-                // Serialize data as URL query string
-                let query_data: String = serde_qs::to_string(&query_data)?;
+                // Get query data as URL query string
+                let query_data: String = api.query_data()?;
 
                 // Set query string to URL
                 url.set_query(Some(&query_data));
@@ -119,5 +125,13 @@ impl KrakenClient {
 
         // Sum balances
         Ok(balances.sum())
+    }
+
+    /// Get **bitcoin** transactions.
+    pub async fn deposit_transactions(&self) -> Result<Vec<DepositTransaction>, Error> {
+        self.query_private(Api::DepositStatus {
+            asset: Some(XBT_TICKER),
+        })
+        .await
     }
 }
