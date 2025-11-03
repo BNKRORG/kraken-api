@@ -7,7 +7,7 @@
 
 pub mod auth;
 pub mod client;
-mod constant;
+pub mod constant;
 pub mod error;
 pub mod prelude;
 mod request;
