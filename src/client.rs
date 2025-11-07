@@ -59,7 +59,7 @@ pub struct KrakenClient {
 }
 
 impl KrakenClient {
-    /// Construct a new Coinbase App client.
+    /// Construct a new client.
     pub fn new(auth: KrakenAuth) -> Result<Self, Error> {
         Ok(Self {
             root_url: Url::parse(API_ROOT_URL)?,
