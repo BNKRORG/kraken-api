@@ -17,6 +17,7 @@ pub(crate) enum Request<'a> {
     Empty(Empty),
     DepositStatus(DepositStatus<'a>),
     WithdrawStatus(WithdrawStatus<'a>),
+    TradeHistory(GetTradeHistory<'a>),
 }
 
 #[derive(Debug, Serialize)]
@@ -29,6 +30,19 @@ pub(crate) struct DepositStatus<'a> {
 pub(crate) struct WithdrawStatus<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) asset: Option<&'a str>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct GetTradeHistory<'a> {
+    #[serde(rename = "type")]
+    pub r#type: &'a str,
+    pub trades: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ofs: Option<u64>,
 }
 
 #[cfg(test)]

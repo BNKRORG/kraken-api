@@ -10,8 +10,12 @@ use url::Url;
 use crate::auth::{self, KrakenAuth};
 use crate::constant::{API_ROOT_URL, API_VERSION, USER_AGENT_NAME, XBT_TICKER};
 use crate::error::Error;
-use crate::request::{DepositStatus, Empty, KrakenRequestBody, Request, WithdrawStatus};
-use crate::response::{BitcoinBalances, DepositTransaction, KrakenResult, WithdrawTransaction};
+use crate::request::{
+    DepositStatus, Empty, GetTradeHistory, KrakenRequestBody, Request, WithdrawStatus,
+};
+use crate::response::{
+    BitcoinBalances, DepositTransaction, KrakenResult, Trade, TradeHistory, WithdrawTransaction,
+};
 
 enum Api<'a> {
     Balance,
@@ -23,6 +27,10 @@ enum Api<'a> {
         /// Currency to get transactions for.
         asset: Option<&'a str>,
     },
+    TradeHistory {
+        start: Option<u64>,
+        end: Option<u64>,
+    },
 }
 
 impl Api<'_> {
@@ -31,6 +39,7 @@ impl Api<'_> {
             Self::Balance => "Balance",
             Self::DepositStatus { .. } => "DepositStatus",
             Self::WithdrawStatus { .. } => "WithdrawStatus",
+            Self::TradeHistory { .. } => "TradeHistory",
         }
     }
 
@@ -42,6 +51,13 @@ impl Api<'_> {
             }),
             Self::WithdrawStatus { asset } => Request::WithdrawStatus(WithdrawStatus {
                 asset: asset.as_deref(),
+            }),
+            Self::TradeHistory { start, end } => Request::TradeHistory(GetTradeHistory {
+                r#type: "closed position",
+                trades: true,
+                start: *start,
+                end: *end,
+                ofs: None,
             }),
         }
     }
@@ -150,5 +166,24 @@ impl KrakenClient {
             asset: Some(XBT_TICKER),
         })
         .await
+    }
+
+    /// Get **bitcoin** trade history.
+    pub async fn trade_history(&self) -> Result<Vec<Trade>, Error> {
+        let history: TradeHistory = self
+            .query_private(Api::TradeHistory {
+                start: None,
+                end: None,
+            })
+            .await?;
+
+        // Filter for trades involving Bitcoin (checking if pair contains the ticker)
+        let trades: Vec<Trade> = history
+            .trades
+            .into_values()
+            .filter(|trade| trade.pair.contains(XBT_TICKER))
+            .collect();
+
+        Ok(trades)
     }
 }

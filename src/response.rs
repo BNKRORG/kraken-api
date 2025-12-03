@@ -149,6 +149,62 @@ pub struct WithdrawTransaction {
     pub status: TransactionStatus,
 }
 
+/// Trade history
+#[derive(Debug, Deserialize)]
+pub(crate) struct TradeHistory {
+    /// Trades
+    pub trades: HashMap<String, Trade>,
+    // /// Count of trades
+    // pub count: usize,
+}
+
+/// Trade type
+#[derive(Debug, Deserialize)]
+pub enum TrateType {
+    /// Buy
+    #[serde(rename = "buy")]
+    Buy,
+    /// Sell
+    #[serde(rename = "sell")]
+    Sell,
+}
+
+/// Trade history trade entry
+#[derive(Debug, Deserialize)]
+pub struct Trade {
+    /// Unique identifier of trade executed
+    #[serde(rename = "trade_id")]
+    pub id: String,
+    /// Order responsible for execution of trade
+    #[serde(rename = "ordertxid")]
+    pub order_txid: String,
+    /// Position responsible for execution of trade
+    #[serde(rename = "postxid")]
+    pub pos_txid: String,
+    /// Asset pair
+    pub pair: String,
+    /// Unix timestamp of trade
+    pub time: u64,
+    /// Type of order (buy/sell)
+    #[serde(rename = "type")]
+    pub r#type: TrateType,
+    /// Order type
+    #[serde(rename = "ordertype")]
+    pub order_type: String,
+    /// Average price order was executed at (quote currency)
+    #[serde(deserialize_with = "deserialize_string_to_f64")]
+    pub price: f64,
+    /// Total cost of order (quote currency)
+    #[serde(deserialize_with = "deserialize_string_to_f64")]
+    pub cost: f64,
+    /// Total fee (quote currency)
+    #[serde(deserialize_with = "deserialize_string_to_f64")]
+    pub fee: f64,
+    /// Volume (base currency)
+    #[serde(deserialize_with = "deserialize_string_to_f64")]
+    pub vol: f64,
+}
+
 fn deserialize_string_to_f64<'de, D>(deserializer: D) -> Result<f64, D::Error>
 where
     D: Deserializer<'de>,
