@@ -146,7 +146,9 @@ impl KrakenClient {
 
     /// Get **bitcoin** withdraw transactions.
     pub async fn withdraw_transactions(&self) -> Result<Vec<WithdrawTransaction>, Error> {
-        self.query_private(Api::WithdrawStatus { asset: None })
-            .await
+        self.query_private(Api::WithdrawStatus {
+            asset: Some(XBT_TICKER),
+        })
+        .await
     }
 }
