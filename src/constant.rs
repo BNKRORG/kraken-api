@@ -11,7 +11,9 @@ pub(crate) const USER_AGENT_NAME: &str = concat!("kraken-api/", env!("CARGO_PKG_
 
 /// Kraken BTC ticker symbol
 pub const XBT_TICKER: &str = "XBT";
+/// Kraken BTC ticker symbol
+pub const XXBT_TICKER: &str = "XXBT";
 
 /// Kraken BTC tickers
 pub static TICKERS: LazyLock<HashSet<&str>> =
-    LazyLock::new(|| HashSet::from(["XBT", "XXBT", "XBT.B", "XBT.M", "XBT.F", "XBT.T"]));
+    LazyLock::new(|| HashSet::from([XBT_TICKER, XXBT_TICKER, "XBT.B", "XBT.M", "XBT.F", "XBT.T"]));
