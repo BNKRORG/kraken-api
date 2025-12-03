@@ -9,7 +9,8 @@ pub(crate) const API_VERSION: u16 = 0;
 
 pub(crate) const USER_AGENT_NAME: &str = concat!("kraken-api/", env!("CARGO_PKG_VERSION"));
 
-pub(crate) const XBT_TICKER: &str = "XBT";
+/// Kraken BTC ticker symbol
+pub const XBT_TICKER: &str = "XBT";
 
 /// Kraken BTC tickers
 pub static TICKERS: LazyLock<HashSet<&str>> =
