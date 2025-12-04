@@ -17,7 +17,7 @@ pub(crate) enum Request<'a> {
     Empty(Empty),
     DepositStatus(DepositStatus<'a>),
     WithdrawStatus(WithdrawStatus<'a>),
-    TradeHistory(GetTradeHistory<'a>),
+    TradesHistory(GetTradesHistory<'a>),
 }
 
 #[derive(Debug, Serialize)]
@@ -33,7 +33,7 @@ pub(crate) struct WithdrawStatus<'a> {
 }
 
 #[derive(Debug, Serialize)]
-pub(crate) struct GetTradeHistory<'a> {
+pub(crate) struct GetTradesHistory<'a> {
     #[serde(rename = "type")]
     pub r#type: &'a str,
     pub trades: bool,

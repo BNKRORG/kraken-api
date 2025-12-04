@@ -149,9 +149,9 @@ pub struct WithdrawTransaction {
     pub status: TransactionStatus,
 }
 
-/// Trade history
+/// Trades history
 #[derive(Debug, Deserialize)]
-pub(crate) struct TradeHistory {
+pub(crate) struct TradesHistory {
     /// Trades
     pub trades: HashMap<String, Trade>,
     // /// Count of trades
