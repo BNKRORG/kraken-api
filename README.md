@@ -1,5 +1,7 @@
 # Kraken API
 
+> **Moved to <https://github.com/BNKRORG/exchanges>!**
+
 ## Installation
 
 Add the dependency to your `Cargo.toml`:
